@@ -1,0 +1,14 @@
+apiVersion: v1
+entries:
+  metrics-agent:
+  - apiVersion: v2
+    appVersion: 1.2.0
+    created: "2022-04-06T18:31:14.094463643Z"
+    description: A Helm chart for Kubernetes
+    digest: cb17b7f8e0094102b6c0b3905edb2eb98a7ce35626ac527228796d7cd4d875fb
+    name: metrics-agent
+    type: application
+    urls:
+    - https://github.com/daniel-spray/metrics-agent/releases/download/metrics-agent-1.0.0/metrics-agent-1.0.0.tgz
+    version: 1.0.0
+generated: "2022-04-06T18:31:13.837560026Z"
