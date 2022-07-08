@@ -88,7 +88,7 @@ func getHeapsterURL(ctx context.Context, clientset kubernetes.Interface, cluster
 	for _, pod := range pods.Items {
 		if strings.Contains(pod.Name, "heapster") {
 			URL.Host = clusterHostURL
-			URL.Path = pod.SelfLink + ":8082/proxy/api/v1/metric-export"
+			//URL.Path = pod.SelfLink + ":8082/proxy/api/v1/metric-export"
 		}
 	}
 

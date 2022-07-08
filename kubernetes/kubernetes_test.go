@@ -6,10 +6,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
-	"net/url"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -33,66 +31,6 @@ func TestCreateClusterConfig(t *testing.T) {
 			t.Errorf("Expected clientset and agentConfig to successfully create / update %v ", err)
 		}
 	})
-}
-
-// nolint: dupl
-func TestUpdateConfigurationForServices(t *testing.T) {
-
-	config := KubeAgentConfig{
-		APIKey:         "1234-456-789",
-		ClusterHostURL: "http://localhost:8088",
-		PollInterval:   600,
-		Insecure:       false,
-	}
-
-	t.Run("ensure that an updated agentConfig with services if running is returned", func(t *testing.T) {
-		selfLink := "http://localhost"
-		servicePort := 8080
-		config.Clientset = fake.NewSimpleClientset(&v1.Service{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "heapster",
-				Namespace: v1.NamespaceDefault,
-				Labels: map[string]string{
-					"tag": "",
-				},
-				SelfLink: selfLink,
-			},
-			Spec: v1.ServiceSpec{
-				Ports: []v1.ServicePort{
-					{
-						Port: int32(servicePort),
-					},
-				},
-			},
-		})
-
-		_, err := updateConfigurationForServices(context.TODO(), config)
-		if err != nil {
-			t.Errorf("Error getting services %v ", err)
-		}
-	})
-
-	t.Run("ensure that an updated agentConfig with services if running without defined serviceport is returned",
-		func(t *testing.T) {
-			selfLink := "http://localhost"
-			config.Clientset = fake.NewSimpleClientset(&v1.Service{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      "heapster",
-					Namespace: v1.NamespaceDefault,
-					Labels: map[string]string{
-						"tag": "",
-					},
-					SelfLink: selfLink,
-				},
-			})
-
-			_, err := updateConfigurationForServices(context.TODO(), config)
-			if err != nil {
-				t.Errorf("Error getting services %v ", err)
-			}
-
-		})
-
 }
 
 func TestEnsureMetricServicesAvailable(t *testing.T) {
@@ -152,37 +90,6 @@ func TestEnsureMetricServicesAvailable(t *testing.T) {
 	})
 }
 
-// nolint: dupl
-func TestUpdateConfigWithOverrideURLs(t *testing.T) {
-
-	t.Parallel()
-
-	t.Run("ensure that heapsterURL is set when Overridden Heapster URL argument is defined", func(t *testing.T) {
-		config := updateConfigWithOverrideURLs(KubeAgentConfig{
-			HeapsterOverrideURL: "https://heapster.availabile.here:443/",
-			Insecure:            false,
-		})
-		if config.HeapsterURL != config.HeapsterOverrideURL || config.Insecure {
-			t.Error(" HeapsterURL override URL set but not validated and set to heapsterURL ")
-		}
-
-	})
-
-	t.Run("ensure that heapsterURL is set to proxyPath when overridden Heapster URL is not defined", func(t *testing.T) {
-		config := updateConfigWithOverrideURLs(KubeAgentConfig{
-			HeapsterOverrideURL: "",
-			HeapsterProxyURL: url.URL{
-				Host: "http://localhost:8888/",
-				Path: "/api/v1/namespaces/default/services/heapster:8888/proxy/metrics"},
-		})
-		if config.HeapsterURL != config.HeapsterProxyURL.Host+config.HeapsterProxyURL.Path {
-			t.Error(" HeapsterURL is not set to proxyPath ")
-		}
-
-	})
-
-}
-
 func TestUpdateConfigWithOverrideNamespace(t *testing.T) {
 	t.Parallel()
 
@@ -197,36 +104,6 @@ func TestUpdateConfigWithOverrideNamespace(t *testing.T) {
 		if config.Namespace != "testing-namespace" {
 			t.Errorf("Expected Namespace to be \"testing-namespace\" but received \"%v\" ", config.Namespace)
 		}
-	})
-}
-
-func TestCreateAgentStatusMetric(t *testing.T) {
-
-	AgentStartTime := time.Now()
-	exportDir := os.TempDir() + "/" + strconv.FormatInt(time.Now().Unix(), 10)
-	_ = os.MkdirAll(exportDir, os.ModePerm)
-	tD, _ := os.Open(exportDir)
-
-	cs := fake.NewSimpleClientset()
-	sv, _ := cs.Discovery().ServerVersion()
-
-	config := KubeAgentConfig{
-		AgentStartTime: AgentStartTime,
-		ClusterVersion: ClusterVersion{
-			version:     1.1,
-			versionInfo: sv,
-		},
-		UseInClusterConfig: false,
-		HeapsterURL:        "https://heapster.url",
-	}
-
-	t.Run("Ensure that a cloudability Status metric is created", func(t *testing.T) {
-		err := createAgentStatusMetric(tD, config, AgentStartTime)
-
-		if err != nil {
-			t.Errorf("Error creating agent Status Metric: %v", err)
-		}
-		os.RemoveAll(tD.Name())
 	})
 }
 
